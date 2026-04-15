@@ -86,7 +86,9 @@
     const tBonus = (defB ? defB.def : defT.def) || 0;        // 0..4
     const tMul = 1 - (tBonus * 0.05);                         // up to -20% at mountain
     const rnd = 0.9 + Math.random()*0.2;                     // small luck
-    const dmg = base * atkHpFactor * tMul * rnd;
+    const atkRank = (atk.rank && atk.rank.atkMul) || 1;
+    const defRank = (def.rank && def.rank.defMul) || 1;
+    const dmg = base * atkHpFactor * tMul * rnd * atkRank / defRank;
     return Math.max(0, Math.round(dmg));
   }
 
@@ -98,6 +100,7 @@
     if(target.hp <= 0){
       target.hp = 0;
       target.dead = true;
+      creditKill(attacker);
     } else {
       // counter if within direct range and attacker is direct (not indirect)
       if(!attacker.def.indirect){
@@ -106,11 +109,21 @@
         if(inRange && G.DMG[target.def.key] && G.DMG[target.def.key][attacker.def.key] != null){
           counter = damageFrom(target, attacker);
           attacker.hp -= counter;
-          if(attacker.hp <= 0){ attacker.hp = 0; attacker.dead = true; }
+          if(attacker.hp <= 0){ attacker.hp = 0; attacker.dead = true; creditKill(target); }
         }
       }
     }
     return { dealt, counter };
+  }
+
+  function creditKill(unit){
+    unit.kills = (unit.kills || 0) + 1;
+    const prevRank = unit.rank;
+    unit.rank = G.rankFor(unit.kills);
+    if(prevRank && unit.rank !== prevRank){
+      G.log && G.log(unit.team, `${unit.def.name} promoted to ${unit.rank.name}`);
+      G.audio && G.audio.play('capture');
+    }
   }
 
   // Capture: infantry on enemy/neutral building chips cap points equal to HP/10

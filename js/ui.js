@@ -37,12 +37,15 @@
     const tpanel = $('panel-terrain');
     if(u){
       panel.classList.remove('hidden');
+      const rankName = u.rank ? u.rank.name : 'ROOKIE';
+      const next = u.rank ? G.nextRank(u.rank) : null;
+      const rankLabel = next ? `${rankName} · ${u.kills||0}/${next.threshold}` : `${rankName} · MAX`;
       $('pu-name').textContent = u.def.name + ' · ' + (u.team==='red'?'RED':'BLUE');
       $('pu-hp').textContent = u.hp;
       $('pu-move').textContent = u.def.move;
       $('pu-atk').textContent = u.def.indirect ? 'IND' : 'DIR';
       $('pu-rng').textContent = u.def.range === 1 ? '1' : `${u.def.minRange}-${u.def.range}`;
-      $('pu-lore').textContent = u.def.lore;
+      $('pu-lore').textContent = rankLabel + ' · ' + u.def.lore;
     } else {
       panel.classList.add('hidden');
     }

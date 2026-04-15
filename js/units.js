@@ -102,8 +102,29 @@
     return 1;
   }
 
+  // Veterancy tiers — kills threshold, damage/defense multipliers, display name
+  const RANKS = [
+    { key:'rookie',  threshold:0, atkMul:1.00, defMul:1.00, name:'ROOKIE' },
+    { key:'veteran', threshold:2, atkMul:1.10, defMul:1.05, name:'VETERAN' },
+    { key:'apex',    threshold:5, atkMul:1.20, defMul:1.10, name:'APEX' }
+  ];
+
+  function rankFor(kills){
+    let cur = RANKS[0];
+    for(const r of RANKS) if(kills >= r.threshold) cur = r;
+    return cur;
+  }
+
+  function nextRank(rank){
+    const i = RANKS.indexOf(rank);
+    return (i < RANKS.length - 1) ? RANKS[i+1] : null;
+  }
+
   G.UNITS = UNITS;
   G.DMG = DMG;
+  G.RANKS = RANKS;
+  G.rankFor = rankFor;
+  G.nextRank = nextRank;
   G.canMoveOn = canMoveOn;
   G.moveCost = moveCost;
 })();

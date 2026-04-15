@@ -36,7 +36,9 @@
       type, def, team, x, y,
       hp: hp != null ? hp : 100,
       moved: false,
-      dead: false
+      dead: false,
+      kills: 0,
+      rank: G.rankFor(0)
     };
   }
 

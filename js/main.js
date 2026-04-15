@@ -176,6 +176,23 @@
       // team corner tag
       ctx.fillStyle = u.team==='red' ? '#ff2f85' : '#19e6ff';
       ctx.fillRect(u.x*TS+2, u.y*TS+TS-5, 6, 3);
+      // rank pips (bottom-center)
+      if(u.rank && u.rank.key !== 'rookie'){
+        const pips = u.rank.key === 'apex' ? 2 : 1;
+        const pipColor = u.team==='red' ? '#ffcc3d' : '#b5ff3d';
+        ctx.fillStyle = pipColor;
+        for(let p=0;p<pips;p++){
+          ctx.fillRect(u.x*TS+10 + p*4, u.y*TS+TS-4, 2, 2);
+        }
+        if(u.rank.key === 'apex'){
+          ctx.save();
+          const aura = 0.35 + 0.25*Math.sin(tNow/180 + u.id);
+          ctx.strokeStyle = `rgba(255,204,61,${aura})`;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(u.x*TS+3.5, u.y*TS+3.5, TS-7, TS-7);
+          ctx.restore();
+        }
+      }
     }
 
     // Selection ring
