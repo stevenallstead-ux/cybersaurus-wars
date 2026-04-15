@@ -37,6 +37,43 @@
     next();
   }
 
+  function maybeUseCrystal(u){
+    if(!u.crystal) return;
+    const s = G.state;
+    if(u.crystal === 'graft' && u.hp <= 50){
+      G.useCrystal(u, null);
+      return;
+    }
+    if(u.crystal === 'echo'){
+      G.useCrystal(u, null);
+      return;
+    }
+    if(u.crystal === 'seismic'){
+      // find best 3x3 target with ≥2 enemies
+      let best = null;
+      for(let y=0;y<s.map.H;y++) for(let x=0;x<s.map.W;x++){
+        let count = 0;
+        for(const e of s.units){
+          if(e.team===u.team||e.dead) continue;
+          if(Math.max(Math.abs(e.x-x),Math.abs(e.y-y))<=1) count++;
+        }
+        if(count >= 2 && (!best || count > best.count)) best = {x,y,count};
+      }
+      if(best) G.useCrystal(u, best);
+      return;
+    }
+    if(u.crystal === 'chrono'){
+      // lock strongest enemy
+      let best = null;
+      for(const e of s.units){
+        if(e.team===u.team||e.dead) continue;
+        const score = (e.def.cost||0) + e.hp;
+        if(!best || score > best.score) best = {x:e.x, y:e.y, score};
+      }
+      if(best) G.useCrystal(u, best);
+    }
+  }
+
   function maybeCastUlt(team, phase){
     if(!G.apex || !G.apex.canCast(team)) return;
     const s = G.state;
@@ -54,9 +91,8 @@
       const avgHp = friends.length ? friends.reduce((a,u)=>a+u.hp,0)/friends.length : 100;
       if(anyHurt || avgHp < 65){ G.apex.castSelf(team, null); return; }
     } else if(apxKey === 'throat'){
-      // cast if any unmoved unit has an attackable kill available
-      const unmoved = friends.filter(u=>!u.moved);
-      if(unmoved.length >= 2){ G.apex.castSelf(team, null); return; }
+      // cast when we have units to re-activate and targets to chase
+      if(friends.length >= 2 && enemies.length >= 1){ G.apex.castSelf(team, null); return; }
     } else if(apxKey === 'viridian'){
       // cast when infantry are advancing and could use cover
       const advancingInf = friends.filter(u=>u.def.isInfantry);
@@ -110,6 +146,9 @@
 
   function actForUnit(u){
     const s = G.state;
+    // 0. Maybe use a crystal
+    maybeUseCrystal(u);
+    if(u.dead || u.moved) return;
     // 1. Compute reachable
     const reach = G.reachable(u);
     const enemies = s.units.filter(x=>x.team!==u.team && !x.dead);
@@ -141,6 +180,19 @@
           if(other && other!==u) continue;
           const score = 800 + (t.building==='hq'?500:0) - tile.cost*2;
           if(!best || score > best.score) best = { kind:'capture', tile, score };
+        }
+      }
+    }
+
+    // SHRINE: if unit has no crystal already and a shrine with one is reachable
+    if(!u.crystal){
+      for(const tile of reach){
+        const t = G.getTile(tile.x,tile.y);
+        if(t.type === 'shrine' && t.crystal){
+          const other = G.unitAt(tile.x,tile.y);
+          if(other && other!==u) continue;
+          const score = 650 - tile.cost*2;
+          if(!best || score > best.score) best = { kind:'move', tile, score };
         }
       }
     }

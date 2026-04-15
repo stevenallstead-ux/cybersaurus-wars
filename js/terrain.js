@@ -130,6 +130,46 @@
     }
   }
 
+  // Shrine — purple obelisk over stone plinth (terrain only; pulse is rendered live in main.js)
+  function drawShrine(x,seed){
+    // ground base
+    x.fillStyle='#121a24'; x.fillRect(0,0,SIZE,SIZE);
+    const r = rng(seed+131);
+    for(let i=0;i<80;i++){
+      const px=(r()*SIZE)|0, py=(r()*SIZE)|0;
+      x.fillStyle = (r()<.5) ? '#1b2735' : '#0e141c';
+      x.fillRect(px,py,1,1);
+    }
+    // stone plinth
+    x.fillStyle='#2a2233';
+    x.beginPath();
+    x.moveTo(8,42); x.lineTo(16,36); x.lineTo(32,36); x.lineTo(40,42); x.closePath(); x.fill();
+    x.fillStyle='#3e3148';
+    x.beginPath();
+    x.moveTo(12,38); x.lineTo(36,38); x.lineTo(36,42); x.lineTo(12,42); x.closePath(); x.fill();
+    // plinth crack
+    x.fillStyle='#1a1322';
+    x.fillRect(20,38,1,4); x.fillRect(26,38,1,4);
+    // obelisk
+    x.fillStyle='#2b1a3f';
+    x.beginPath();
+    x.moveTo(20,36); x.lineTo(20,12); x.lineTo(24,6); x.lineTo(28,12); x.lineTo(28,36); x.closePath(); x.fill();
+    x.fillStyle='#3a2757';
+    x.beginPath();
+    x.moveTo(20,36); x.lineTo(20,12); x.lineTo(24,6); x.closePath(); x.fill();
+    // inlaid runes (vertical dashes)
+    x.fillStyle='#b264ff';
+    for(let y=14;y<34;y+=4){ x.fillRect(23,y,2,2); }
+    // top spike
+    x.fillStyle='#e2c2ff';
+    x.fillRect(23,4,2,2);
+    // shadow
+    x.fillStyle='rgba(0,0,0,.5)';
+    x.beginPath(); x.ellipse(24,45,16,2,0,0,Math.PI*2); x.fill();
+    // border
+    x.strokeStyle='rgba(0,0,0,.35)'; x.strokeRect(.5,.5,SIZE-1,SIZE-1);
+  }
+
   // Generic "ground" under buildings
   function drawGround(x,seed){
     x.fillStyle='#15202a'; x.fillRect(0,0,SIZE,SIZE);
@@ -148,7 +188,8 @@
     mountain: drawMountain,
     road: drawRoad,
     water: drawWater,
-    ground: drawGround
+    ground: drawGround,
+    shrine: drawShrine
   };
 
   function buildAll(){

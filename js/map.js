@@ -11,6 +11,7 @@
     road:     { def:0, name:'CIRCUIT ROAD', lore:'Fast lane. Cuts move cost.' },
     water:    { def:0, name:'WATER',    lore:'Only air can cross.' },
     ground:   { def:3, name:'STRUCTURE',lore:'Fortified platform.' },
+    shrine:   { def:1, name:'FOSSIL SHRINE',lore:'Stand here a turn to claim a power crystal.' },
   };
 
   const BUILDING_DEF = {
@@ -28,12 +29,12 @@
   const ROWS = [
     /* 0 */ 'M..F........#.',
     /* 1 */ '...F....R.F.%.',
-    /* 2 */ '.*.RR...R..FF.',
+    /* 2 */ '.*.RR..S.R.FF.',
     /* 3 */ '....R...R.*...',
-    /* 4 */ '...FRWWWWRF...',
-    /* 5 */ '...FRWWWWRF...',
+    /* 4 */ '...SRWWWWRF...',
+    /* 5 */ '...FRWWWWRS...',
     /* 6 */ '...*.R...R....',
-    /* 7 */ '.FF..R...RR.*.',
+    /* 7 */ '.FF..R.S.RR.*.',
     /* 8 */ '.%.F.R........',
     /* 9 */ '.#........F..M'
   ];
@@ -52,13 +53,16 @@
         else if(ch==='M') type='mountain';
         else if(ch==='R') type='road';
         else if(ch==='W') type='water';
+        else if(ch==='S') type='shrine';
         else if(ch==='*'){ type='ground'; building='base'; team='neutral'; }
         else if(ch==='%'){ type='ground'; building='factory'; team = (y>=5)?'red':'blue'; }
         else if(ch==='#'){ type='ground'; building='hq'; team = (y>=5)?'red':'blue'; }
         tr.push({
           x,y, type, building, team,
           originalTeam: team,
-          capHP: building ? BUILDING_DEF[building].capMax : 0
+          capHP: building ? BUILDING_DEF[building].capMax : 0,
+          crystal: type==='shrine' ? rollCrystal() : null,
+          regenAt: 0
         });
       }
       tiles.push(tr);
@@ -75,7 +79,20 @@
     return { W, H, tiles, startUnits };
   }
 
+  const CRYSTALS = {
+    seismic: { key:'seismic', name:'SEISMIC STRIKE', kind:'target', desc:'3×3 zone — 30 damage to enemies' },
+    chrono:  { key:'chrono',  name:'CHRONO LAG',     kind:'target', desc:'Target enemy skips next turn' },
+    graft:   { key:'graft',   name:'GRAFT SURGE',    kind:'self',   desc:'Full heal, act again this turn' },
+    echo:    { key:'echo',    name:'FOSSIL ECHO',    kind:'self',   desc:'Reveal enemy HP auras, 2 turns' },
+  };
+  const CRYSTAL_POOL = ['seismic','chrono','graft','echo'];
+  function rollCrystal(){
+    return CRYSTAL_POOL[(Math.random()*CRYSTAL_POOL.length)|0];
+  }
+
   G.TERRAIN_DEF = TERRAIN_DEF;
   G.BUILDING_DEF = BUILDING_DEF;
+  G.CRYSTALS = CRYSTALS;
+  G.rollCrystal = rollCrystal;
   G.buildMap = build;
 })();

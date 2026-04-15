@@ -41,12 +41,13 @@
       const rankName = u.rank ? u.rank.name : 'ROOKIE';
       const next = u.rank ? G.nextRank(u.rank) : null;
       const rankLabel = next ? `${rankName} · ${u.kills||0}/${next.threshold}` : `${rankName} · MAX`;
+      const crystalTxt = u.crystal ? ` · ✦ ${G.CRYSTALS[u.crystal].name}` : '';
       $('pu-name').textContent = u.def.name + ' · ' + (u.team==='red'?'RED':'BLUE');
       $('pu-hp').textContent = u.hp;
       $('pu-move').textContent = u.def.move;
       $('pu-atk').textContent = u.def.indirect ? 'IND' : 'DIR';
       $('pu-rng').textContent = u.def.range === 1 ? '1' : `${u.def.minRange}-${u.def.range}`;
-      $('pu-lore').textContent = rankLabel + ' · ' + u.def.lore;
+      $('pu-lore').textContent = rankLabel + crystalTxt + ' · ' + u.def.lore;
     } else {
       panel.classList.add('hidden');
     }
@@ -132,11 +133,15 @@
   ui.hideFactoryMenu = function(){ $('panel-factory').classList.add('hidden'); };
 
   ui.showActionMenu = function(opts){
-    // opts: { canAttack, canCapture, onAction(name) }
+    // opts: { canAttack, canCapture, hasCrystal, crystalName, onAction(name) }
     const panel = $('panel-action');
     panel.classList.remove('hidden');
     $('act-attack').disabled = !opts.canAttack;
     $('act-capture').disabled = !opts.canCapture;
+    const cBtn = $('act-crystal');
+    cBtn.disabled = !opts.hasCrystal;
+    cBtn.textContent = opts.hasCrystal ? (opts.crystalName || 'CRYSTAL') : 'CRYSTAL';
+    cBtn.style.color = opts.hasCrystal ? '#e2c2ff' : '';
     panel.querySelectorAll('.action-btn').forEach(btn => {
       btn.onclick = () => opts.onAction(btn.dataset.action);
     });

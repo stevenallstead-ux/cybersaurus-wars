@@ -95,6 +95,7 @@
     if(unit.def.isAir) return 1;
     if(t==='road') return 1;
     if(t==='plains') return 1;
+    if(t==='shrine') return 2; // slight deference; tread units pay same
     if(t==='forest') return unit.def.moveType==='tread' ? 3 : 2;
     if(t==='mountain') return 2;
     if(t==='water') return 99;

@@ -140,6 +140,31 @@
       ctx.restore();
     }
 
+    // Shrines — pulsing crystal core overlay (only when crystal present)
+    for(let y=0;y<s.map.H;y++){
+      for(let x=0;x<s.map.W;x++){
+        const t = s.map.tiles[y][x];
+        if(t.type !== 'shrine') continue;
+        const hasCrystal = !!t.crystal;
+        const cx = x*TS + 24, cy = y*TS + 20;
+        if(hasCrystal){
+          const pulse = 0.55 + 0.35*Math.sin((tNow + x*97 + y*41)/140);
+          ctx.save();
+          ctx.fillStyle = `rgba(178,100,255,${pulse*0.4})`;
+          ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = `rgba(226,194,255,${pulse})`;
+          ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
+        } else {
+          // dim state
+          ctx.save();
+          ctx.fillStyle = 'rgba(80,60,110,0.25)';
+          ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
     // Buildings
     for(let y=0;y<s.map.H;y++){
       for(let x=0;x<s.map.W;x++){
@@ -168,7 +193,9 @@
       ctx.drawImage(spr, u.x*TS, u.y*TS + bob);
       ctx.restore();
       // HP bar bottom-right corner of tile
-      if(u.hp < 100){
+      const echo = s.fossilEcho && s.fossilEcho.expiresAtTurn >= s.turnNum
+                && s.fossilEcho.team !== u.team;
+      if(u.hp < 100 || echo){
         const disp = Math.ceil(u.hp/10);
         ctx.fillStyle = '#0c0c0c';
         ctx.fillRect(u.x*TS+TS-16, u.y*TS+TS-10, 14, 8);
@@ -176,6 +203,21 @@
         ctx.font = 'bold 9px Orbitron';
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(disp, u.x*TS+TS-9, u.y*TS+TS-5);
+        if(echo){
+          // purple outline to signal fossil-echo reveal
+          ctx.strokeStyle = 'rgba(226,194,255,.9)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(u.x*TS+TS-16.5, u.y*TS+TS-10.5, 15, 9);
+        }
+      }
+      if(u.lagged){
+        // chrono lag visual
+        ctx.save();
+        ctx.strokeStyle = 'rgba(178,100,255,.8)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3,3]);
+        ctx.strokeRect(u.x*TS+2.5, u.y*TS+2.5, TS-5, TS-5);
+        ctx.restore();
       }
       // team corner tag
       ctx.fillStyle = u.team==='red' ? '#ff2f85' : '#19e6ff';
@@ -259,6 +301,22 @@
 
     if(mode === 'ult-target'){
       tryUltTarget(x, y);
+      return;
+    }
+    if(mode === 'crystal-target'){
+      const u = crystalTargetUnit;
+      const ok = G.useCrystal(u, {x,y});
+      if(ok){
+        u.moved = true;
+        crystalTargetUnit = null;
+        mode = 'idle';
+        canvas.classList.remove('ult-target');
+        finishAction();
+        G.ui.refreshAll();
+        const w = G.winner(); if(w){ G.endMatch(w); return; }
+      } else {
+        G.log('system', 'Invalid crystal target.');
+      }
       return;
     }
 
@@ -345,20 +403,44 @@
     if(u.def.canCapture && tile.building && tile.team !== u.team) canCapture = true;
 
     reachSet = null;
+    const cdef = u.crystal ? G.CRYSTALS[u.crystal] : null;
     G.ui.showActionMenu({
       canAttack, canCapture,
+      hasCrystal: !!u.crystal,
+      crystalName: cdef ? cdef.name : 'CRYSTAL',
       onAction: (name)=>{
         if(name==='wait'){ u.moved = true; finishAction(); }
         else if(name==='attack'){ enterAttackMode(u); }
         else if(name==='capture'){ doCapture(u); }
+        else if(name==='crystal'){ useCrystalAction(u); }
         else if(name==='cancel'){
-          // revert position
           if(prevMovePos){ u.x = prevMovePos.x; u.y = prevMovePos.y; }
           cancelSelection();
         }
       }
     });
   }
+
+  function useCrystalAction(u){
+    const cdef = G.CRYSTALS[u.crystal];
+    if(!cdef) return;
+    if(cdef.kind === 'self'){
+      const ok = G.useCrystal(u, null);
+      if(ok){
+        // graft un-marks moved; echo doesn't affect moved
+        finishAction();
+        G.ui.refreshAll();
+      }
+    } else {
+      // enter crystal-target mode
+      mode = 'crystal-target';
+      crystalTargetUnit = u;
+      canvas.classList.add('ult-target');
+      G.ui.hideActionMenu();
+      G.log('red', `[${cdef.name}] pick a target...`);
+    }
+  }
+  let crystalTargetUnit = null;
 
   function recomputeAttackTargetsFromSelected(){
     attackTargets = G.attackTargetsFrom(selected, selected.x, selected.y);
