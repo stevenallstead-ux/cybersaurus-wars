@@ -16,6 +16,7 @@
     refreshHud();
     refreshUnitPanel();
     ui.refreshLog();
+    ui.refreshCharge && ui.refreshCharge();
   };
 
   function refreshHud(){
@@ -95,8 +96,9 @@
     const affordOrder = ['raptor','rex','stego','trike','ptero'];
     for(const k of affordOrder){
       const def = G.UNITS[k];
+      const actualCost = G.apex ? G.apex.unitCost(k, s.activeTeam) : def.cost;
       const row = document.createElement('div');
-      const can = s.funds[s.activeTeam] >= def.cost;
+      const can = s.funds[s.activeTeam] >= actualCost;
       row.className = 'buy-row' + (can?'':' disabled');
       const thumb = G.sprites[k][s.activeTeam];
       const tc = document.createElement('canvas');
@@ -108,14 +110,15 @@
       row.appendChild(label);
       const cost = document.createElement('div');
       cost.className='bcost';
-      cost.textContent = '§' + def.cost;
+      cost.textContent = '§' + actualCost;
+      if(actualCost !== def.cost) cost.style.color = '#b5ff3d';
       row.appendChild(cost);
       if(can){
         row.addEventListener('click', ()=>{
-          s.funds[s.activeTeam] -= def.cost;
+          s.funds[s.activeTeam] -= actualCost;
           const u = G.spawnUnit(k, s.activeTeam, tile.x, tile.y);
           u.moved = true;
-          G.log(s.activeTeam, `Built ${def.name} (-§${def.cost})`);
+          G.log(s.activeTeam, `Built ${def.name} (-§${actualCost})`);
           G.audio && G.audio.play('build');
           ui.hideFactoryMenu();
           refreshHud();
@@ -161,6 +164,58 @@
   };
   ui.hideGameOver = function(){ $('gameover').classList.add('hidden'); };
 
+  ui.renderApexCards = function(onPick){
+    const container = $('apex-cards');
+    if(!container || !G.APEX) return;
+    container.innerHTML = '';
+    const order = ['viridian','throat','nova','tarsus'];
+    for(const key of order){
+      const a = G.APEX[key];
+      const card = document.createElement('div');
+      card.className = 'apex-card';
+      card.dataset.apex = key;
+      card.innerHTML = `
+        <div class="apex-name" style="color:${a.color};text-shadow:0 0 8px ${a.color}aa">${a.name}</div>
+        <div class="apex-title">${a.title}</div>
+        <div class="apex-passive"><span class="plbl">PASSIVE</span>${a.passiveDesc}</div>
+        <div class="apex-ult"><span class="ulbl">${a.ultName}</span>${a.ultDesc}</div>`;
+      card.addEventListener('click', ()=>{
+        container.querySelectorAll('.apex-card').forEach(c=>c.classList.remove('selected'));
+        card.classList.add('selected');
+        window.__apexPick = { red:key, blue:randomEnemyApex(key) };
+        $('btn-start').disabled = false;
+        $('btn-start').textContent = 'START CAMPAIGN';
+        onPick && onPick(key);
+      });
+      container.appendChild(card);
+    }
+  };
+  function randomEnemyApex(notKey){
+    const keys = Object.keys(G.APEX).filter(k=>k!==notKey);
+    return keys[(Math.random()*keys.length)|0];
+  }
+
+  ui.refreshCharge = function(){
+    const s = G.state; if(!s) return;
+    const val = s.charge ? (s.charge.red||0) : 0;
+    const pct = (val/10)*100;
+    const fill = $('hud-charge-fill');
+    const num  = $('hud-charge-num');
+    const btn  = $('btn-ult');
+    if(fill) fill.style.width = pct + '%';
+    if(fill) fill.classList.toggle('full', val >= 10);
+    if(num)  num.textContent = val;
+    if(btn){
+      const ready = val >= 10;
+      btn.disabled = !ready;
+      btn.classList.toggle('ready', ready);
+      const apxKey = s.apex && s.apex.red;
+      const apx = apxKey && G.APEX[apxKey];
+      btn.textContent = apx ? (apx.ultName + ' · Q') : 'ULT · Q';
+    }
+  };
+
+  ui.bindUlt = function(cb){ $('btn-ult').addEventListener('click', cb); };
   ui.bindTitleStart = function(cb){ $('btn-start').addEventListener('click', cb); };
   ui.bindPlayAgain  = function(cb){ $('btn-again').addEventListener('click', cb); };
   ui.bindEndTurn    = function(cb){ $('btn-end-turn').addEventListener('click', cb); };

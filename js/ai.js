@@ -4,24 +4,80 @@
 
   function runAITurn(onStep, onDone){
     const s = G.state;
-    const team = s.activeTeam; // should be 'blue' when called
-    // 1. Produce at factories if funds allow and unit count low
+    const team = s.activeTeam;
+
+    // 0a. Cast pre-action ults (non-Throat)
+    maybeCastUlt(team, /*phase*/'pre');
+
+    // 1. Produce at factories
     tryBuild(team);
 
-    // 2. For each of our units (copy list since it may mutate):
-    const mine = s.units.filter(u=>u.team===team && !u.moved && !u.dead).slice();
-    // sort: infantry last so combat units lead the line
-    mine.sort((a,b)=> (a.def.isInfantry?1:0) - (b.def.isInfantry?1:0));
+    runPass(team, () => {
+      // 0b. Throat's Berserk Surge: cast post-pass if still charged + win available
+      maybeCastUlt(team, 'post');
+      // Do a second pass over any freshly-unmoved units (Berserk Surge)
+      const anyUnmoved = s.units.some(u=>u.team===team && !u.dead && !u.moved);
+      if(anyUnmoved){ runPass(team, onDone); }
+      else { onDone && onDone(); }
+    });
+  }
 
+  function runPass(team, done){
+    const s = G.state;
+    const mine = s.units.filter(u=>u.team===team && !u.moved && !u.dead).slice();
+    mine.sort((a,b)=> (a.def.isInfantry?1:0) - (b.def.isInfantry?1:0));
     let i = 0;
     const next = () => {
-      if(i>=mine.length){ onDone && onDone(); return; }
+      if(i>=mine.length){ done && done(); return; }
       const u = mine[i++];
       if(u.dead || u.moved){ setTimeout(next, 10); return; }
       actForUnit(u);
-      setTimeout(next, 240); // pacing for readability
+      setTimeout(next, 200);
     };
     next();
+  }
+
+  function maybeCastUlt(team, phase){
+    if(!G.apex || !G.apex.canCast(team)) return;
+    const s = G.state;
+    const apxKey = s.apex[team];
+    const friends = s.units.filter(u=>u.team===team && !u.dead);
+    const enemies = s.units.filter(u=>u.team!==team && !u.dead);
+
+    // Throat only cast post-pass (so second pass has units to move)
+    if(apxKey === 'throat' && phase !== 'post') return;
+    if(apxKey !== 'throat' && phase === 'post') return;
+
+    if(apxKey === 'tarsus'){
+      // cast if any friend <= 40% or avg HP < 65
+      const anyHurt = friends.some(u=>u.hp<=40);
+      const avgHp = friends.length ? friends.reduce((a,u)=>a+u.hp,0)/friends.length : 100;
+      if(anyHurt || avgHp < 65){ G.apex.castSelf(team, null); return; }
+    } else if(apxKey === 'throat'){
+      // cast if any unmoved unit has an attackable kill available
+      const unmoved = friends.filter(u=>!u.moved);
+      if(unmoved.length >= 2){ G.apex.castSelf(team, null); return; }
+    } else if(apxKey === 'viridian'){
+      // cast when infantry are advancing and could use cover
+      const advancingInf = friends.filter(u=>u.def.isInfantry);
+      if(advancingInf.length >= 1 && enemies.length >= 1){
+        G.apex.castSelf(team, null); return;
+      }
+    } else if(apxKey === 'nova'){
+      // pick best 3x3 target
+      let best = null;
+      for(let y=0;y<s.map.H;y++) for(let x=0;x<s.map.W;x++){
+        let score = 0;
+        for(const e of enemies){
+          if(Math.max(Math.abs(e.x-x), Math.abs(e.y-y)) <= 1) score += Math.min(e.hp, 35);
+        }
+        for(const f of friends){
+          if(Math.max(Math.abs(f.x-x), Math.abs(f.y-y)) <= 1) score -= Math.min(f.hp, 35)*1.2;
+        }
+        if(score > (best ? best.score : 40)) best = {x,y,score};
+      }
+      if(best){ G.apex.castSelf(team, {x:best.x, y:best.y}); return; }
+    }
   }
 
   function tryBuild(team){

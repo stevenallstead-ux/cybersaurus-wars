@@ -25,7 +25,11 @@
         <span class="title-wars">WARS</span>
       </h1>
       <div class="title-caption">RED&nbsp;CHROME&nbsp;<span class="vs">vs</span>&nbsp;BLUE&nbsp;NEON</div>
-      <button id="btn-start" class="btn-primary">START CAMPAIGN</button>
+      <div id="apex-pick" class="apex-pick">
+        <div class="apex-prompt">CHOOSE YOUR APEX</div>
+        <div id="apex-cards" class="apex-cards"></div>
+      </div>
+      <button id="btn-start" class="btn-primary" disabled>SELECT AN APEX</button>
       <div class="title-credit">assets generated at runtime · no server · double-click &amp; play</div>
     </div>
   </section>
@@ -38,6 +42,12 @@
       <div class="hud-cell hud-active" id="hud-active-player">RED CHROME</div>
       <div class="hud-cell hud-funds"><span class="lbl">FUNDS</span> <span id="hud-funds">0</span></div>
       <div class="hud-cell hud-enemy"><span class="lbl">ENEMY</span> <span id="hud-enemy-funds">0</span></div>
+      <div class="hud-cell hud-charge">
+        <span class="lbl">CHARGE</span>
+        <div class="charge-bar"><div id="hud-charge-fill" class="charge-fill"></div></div>
+        <span id="hud-charge-num">0</span>
+      </div>
+      <button id="btn-ult" class="btn-ghost btn-ult" disabled>ULT · Q</button>
       <button id="btn-end-turn" class="btn-ghost">END TURN · E</button>
     </header>
 
@@ -108,6 +118,7 @@
 <script src="js/sprites.js"></script>
 <script src="js/terrain.js"></script>
 <script src="js/units.js"></script>
+<script src="js/apex.js"></script>
 <script src="js/map.js"></script>
 <script src="js/combat.js"></script>
 <script src="js/ai.js"></script>

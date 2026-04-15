@@ -85,6 +85,47 @@ body{
   margin-top:28px;font-size:11px;letter-spacing:.2em;color:var(--dim);opacity:.7;
 }
 
+.apex-pick{margin:16px auto 24px;max-width:760px}
+.apex-prompt{
+  font-family:"Orbitron",sans-serif;font-size:11px;letter-spacing:.45em;color:var(--blue);
+  margin-bottom:12px;opacity:.85;
+}
+.apex-cards{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+}
+.apex-card{
+  background:linear-gradient(180deg, rgba(25,230,255,.06), rgba(0,0,0,.5));
+  border:1px solid var(--line);padding:14px 10px;cursor:pointer;
+  text-align:left;transition:all .15s;position:relative;overflow:hidden;
+}
+.apex-card:hover{border-color:var(--blue);transform:translateY(-3px);box-shadow:0 6px 18px rgba(25,230,255,.18)}
+.apex-card.selected{border-color:var(--gold);box-shadow:0 0 20px rgba(255,204,61,.35);background:linear-gradient(180deg, rgba(255,204,61,.1), rgba(0,0,0,.5))}
+.apex-name{
+  font-family:"Orbitron",sans-serif;font-weight:900;font-size:18px;letter-spacing:.2em;
+  margin-bottom:2px;
+}
+.apex-title{font-size:9px;letter-spacing:.2em;color:var(--dim);margin-bottom:10px;text-transform:uppercase}
+.apex-passive{font-size:10px;color:var(--ink);margin-bottom:6px;line-height:1.4}
+.apex-passive .plbl{color:var(--blue);font-weight:700;margin-right:4px;font-size:9px;letter-spacing:.1em}
+.apex-ult{font-size:10px;color:var(--gold);line-height:1.4}
+.apex-ult .ulbl{color:#fff;font-weight:700;margin-right:4px;font-size:9px;letter-spacing:.1em}
+
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;filter:saturate(.3)}
+
+/* Charge HUD */
+.hud-charge{display:flex;align-items:center;gap:8px}
+.charge-bar{width:80px;height:10px;background:#0c0c0c;border:1px solid var(--line);position:relative}
+.charge-fill{position:absolute;inset:0;width:0;background:linear-gradient(90deg, var(--gold), #ffe88a);transition:width .2s}
+.charge-fill.full{animation:pulse-charge 1s ease-in-out infinite}
+#hud-charge-num{color:var(--gold);font-size:11px}
+@keyframes pulse-charge{0%,100%{box-shadow:0 0 2px var(--gold)}50%{box-shadow:0 0 12px var(--gold), 0 0 24px #ffe88a}}
+.btn-ult{color:var(--dim);border-color:var(--line)}
+.btn-ult:disabled{opacity:.3;cursor:not-allowed}
+.btn-ult.ready{color:var(--gold);border-color:var(--gold);box-shadow:0 0 14px rgba(255,204,61,.45);animation:pulse-charge 1.2s ease-in-out infinite}
+
+/* Ult targeting mode cursor */
+#board.ult-target{cursor:crosshair}
+
 /* buttons */
 .btn-primary{
   font-family:"Orbitron",sans-serif;font-weight:700;

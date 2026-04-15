@@ -10,6 +10,7 @@
     for(const u of map.startUnits){
       units.push(makeUnit(u.type, u.team, u.x, u.y, u.hp));
     }
+    const apexPicks = (window.__apexPick) || {red:'viridian', blue:randomApex()};
     const s = {
       phase: PHASE.TITLE,
       map,
@@ -20,13 +21,22 @@
       selected: null,
       // UI transient state
       hoveredCell: null,
-      movePreview: null,    // {paths: [{x,y,cost}], unit}
-      attackPreview: null,  // after choosing a move tile: list of attackable enemies
-      pendingMove: null,    // {unit, tx, ty} — selected target but not confirmed (action menu)
+      movePreview: null,
+      attackPreview: null,
+      pendingMove: null,
       log: [],
       winnerTeam: null,
+      apex: apexPicks,
+      charge: { red: 0, blue: 0 },
+      ultsUsed: { red: 0, blue: 0 },
+      turnEffects: { red: {}, blue: {} },
     };
     return s;
+  }
+
+  function randomApex(){
+    const keys = Object.keys(G.APEX || {viridian:1,tarsus:1,nova:1,throat:1});
+    return keys[(Math.random()*keys.length)|0];
   }
 
   function makeUnit(type, team, x, y, hp){
@@ -79,6 +89,8 @@
   function endTurn(){
     const s = G.state;
     if(s.phase !== PHASE.PLAY) return;
+    // clear turn-scoped effects for the player whose turn is ending
+    G.apex && G.apex.clearTurnEffects(s.activeTeam);
     // reset moved flags for OPP side
     const other = s.activeTeam === 'red' ? 'blue' : 'red';
     for(const u of s.units){ if(u.team===other) u.moved = false; }

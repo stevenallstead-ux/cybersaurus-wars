@@ -26,14 +26,17 @@
     G.state = G.newState();
     G.state.phase = G.PHASE.TITLE;
     G.ui.show('title');
+    G.ui.renderApexCards && G.ui.renderApexCards();
 
     // Music — title theme starts on first user gesture due to autoplay
     G.ui.bindTitleStart(()=>{
+      if(document.getElementById('btn-start').disabled) return;
       G.audio.ensureCtx();
       G.audio.startMusic('battle');
       G.startMatch();
       mode = 'idle'; selected = null; reachSet = null; attackTargets = null;
     });
+    G.ui.bindUlt && G.ui.bindUlt(handleUlt);
     G.ui.bindPlayAgain(()=>{
       G.ui.hideGameOver();
       G.startMatch();
@@ -73,6 +76,7 @@
       G.endMatch('blue');
     };
     window.__devFunds = (n)=>{ G.state.funds.red += n||10000; G.ui.refreshHud(); };
+    window.__devCharge = (team, n)=>{ G.state.charge[team||'red'] = n != null ? n : 10; G.ui.refreshAll(); };
     window.__state = ()=>G.state;
 
     // Start render loop
@@ -205,13 +209,26 @@
       ctx.restore();
     }
 
-    // Hover crosshair
+    // Hover crosshair (with stormcall 3x3 preview)
     const hc = s.hoveredCell;
     if(hc && hc.x>=0 && hc.y>=0){
       ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(hc.x*TS+0.5, hc.y*TS+0.5, TS-1, TS-1);
+      if(mode === 'ult-target'){
+        const pulse = 0.35 + 0.35*Math.sin(tNow/90);
+        ctx.fillStyle = `rgba(255,204,61,${0.18+pulse*0.15})`;
+        ctx.strokeStyle = `rgba(255,232,138,${0.6+pulse*0.3})`;
+        ctx.lineWidth = 2;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+          const tx = hc.x+dx, ty = hc.y+dy;
+          if(tx<0||ty<0||tx>=s.map.W||ty>=s.map.H) continue;
+          ctx.fillRect(tx*TS+2, ty*TS+2, TS-4, TS-4);
+          ctx.strokeRect(tx*TS+1.5, ty*TS+1.5, TS-3, TS-3);
+        }
+      } else {
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(hc.x*TS+0.5, hc.y*TS+0.5, TS-1, TS-1);
+      }
       ctx.restore();
     }
 
@@ -239,6 +256,11 @@
     if(x<0||y<0||x>=s.map.W||y>=s.map.H) return;
     const tile = s.map.tiles[y][x];
     const unit = G.unitAt(x,y);
+
+    if(mode === 'ult-target'){
+      tryUltTarget(x, y);
+      return;
+    }
 
     if(mode === 'idle'){
       if(unit && unit.team==='red' && !unit.moved){
@@ -395,9 +417,40 @@
     G.endTurn();
   }
 
+  function handleUlt(){
+    const s = G.state;
+    if(!s || s.phase!==G.PHASE.PLAY || s.activeTeam!=='red') return;
+    if(!G.apex || !G.apex.canCast('red')) return;
+    const key = s.apex.red;
+    const def = G.APEX[key];
+    if(def.ultKind === 'target'){
+      mode = 'ult-target';
+      canvas.classList.add('ult-target');
+      G.log('red', `[${def.name}] awaiting target...`);
+    } else {
+      G.apex.castSelf('red', null);
+      G.ui.refreshAll();
+    }
+  }
+
+  function tryUltTarget(tx, ty){
+    const ok = G.apex.castSelf('red', {x:tx, y:ty});
+    mode = 'idle';
+    canvas.classList.remove('ult-target');
+    G.ui.refreshAll();
+    const w = G.winner(); if(w) G.endMatch(w);
+    return ok;
+  }
+
   function onKey(e){
     if(e.key === 'e' || e.key === 'E'){ handleEndTurn(); }
-    else if(e.key === 'Escape'){ cancelSelection(); }
+    else if(e.key === 'q' || e.key === 'Q'){ handleUlt(); }
+    else if(e.key === 'Escape'){
+      if(mode === 'ult-target'){
+        mode = 'idle';
+        canvas.classList.remove('ult-target');
+      } else { cancelSelection(); }
+    }
     else if(e.key === ' '){ G.audio && G.audio.toggleMute(); e.preventDefault(); }
   }
 

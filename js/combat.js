@@ -19,7 +19,7 @@
     const start = {x:unit.x, y:unit.y};
     const out = { paths: new Map() }; // key "x,y" -> {cost, from}
     const key = (x,y)=>x+','+y;
-    const budget = unit.def.move;
+    const budget = unit.def.move + (G.apex ? G.apex.moveBonus(unit) : 0);
     const q = [[start.x,start.y,0]];
     out.paths.set(key(start.x,start.y), {cost:0, from:null});
     while(q.length){
@@ -88,7 +88,8 @@
     const rnd = 0.9 + Math.random()*0.2;                     // small luck
     const atkRank = (atk.rank && atk.rank.atkMul) || 1;
     const defRank = (def.rank && def.rank.defMul) || 1;
-    const dmg = base * atkHpFactor * tMul * rnd * atkRank / defRank;
+    const apxMul = G.apex ? G.apex.damageBonus(atk, !!atk.__isCounter) : 1;
+    const dmg = base * atkHpFactor * tMul * rnd * atkRank * apxMul / defRank;
     return Math.max(0, Math.round(dmg));
   }
 
@@ -103,16 +104,20 @@
       creditKill(attacker);
     } else {
       // counter if within direct range and attacker is direct (not indirect)
-      if(!attacker.def.indirect){
+      // AND the attacker isn't a Viridian phase-shifted infantry (counter-immune).
+      if(!attacker.def.indirect && !(G.apex && G.apex.counterImmune(attacker))){
         const inRange = Math.abs(attacker.x - target.x) + Math.abs(attacker.y - target.y) <= (target.def.range||1)
                      && (target.def.minRange||1) === 1;
         if(inRange && G.DMG[target.def.key] && G.DMG[target.def.key][attacker.def.key] != null){
+          target.__isCounter = true;
           counter = damageFrom(target, attacker);
+          delete target.__isCounter;
           attacker.hp -= counter;
           if(attacker.hp <= 0){ attacker.hp = 0; attacker.dead = true; creditKill(target); }
         }
       }
     }
+    addChargeFor(attacker, target, dealt, counter);
     return { dealt, counter };
   }
 
@@ -124,6 +129,15 @@
       G.log && G.log(unit.team, `${unit.def.name} promoted to ${unit.rank.name}`);
       G.audio && G.audio.play('capture');
     }
+  }
+
+  function addChargeFor(attacker, target, dealt, counter){
+    if(!G.apex) return;
+    // Both teams accrue charge from combat involving them.
+    if(dealt > 0)   G.apex.addCharge(attacker.team, Math.floor(dealt/10));
+    if(dealt > 0)   G.apex.addCharge(target.team,   Math.floor(dealt/10));
+    if(counter > 0) G.apex.addCharge(target.team,   Math.floor(counter/10));
+    if(counter > 0) G.apex.addCharge(attacker.team, Math.floor(counter/10));
   }
 
   // Capture: infantry on enemy/neutral building chips cap points equal to HP/10
@@ -196,7 +210,8 @@
           income += G.BUILDING_DEF[t.building].income;
           // heal friendly unit parked on own building
           const u = unitAt(x,y);
-          if(u && u.team===team && u.hp<100){ u.hp = Math.min(100, u.hp + 20); }
+          const healAmt = (G.apex && G.apex.healAmount(team)) || 20;
+          if(u && u.team===team && u.hp<100){ u.hp = Math.min(100, u.hp + healAmt); }
         }
       }
     }
