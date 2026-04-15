@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CyberSaurus Wars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="scanlines"></div>
+<div id="grain"></div>
+
+<main id="stage">
+
+  <!-- TITLE SCREEN -->
+  <section id="title-screen" class="screen active">
+    <div class="title-wrap">
+      <div class="title-sub">A PROCEDURAL TACTICS RITUAL</div>
+      <h1 class="title-logo">
+        <span class="glyph g1">CYBER</span><span class="glyph g2">SAURUS</span>
+        <span class="title-wars">WARS</span>
+      </h1>
+      <div class="title-caption">RED&nbsp;CHROME&nbsp;<span class="vs">vs</span>&nbsp;BLUE&nbsp;NEON</div>
+      <button id="btn-start" class="btn-primary">START CAMPAIGN</button>
+      <div class="title-credit">assets generated at runtime · no server · double-click &amp; play</div>
+    </div>
+  </section>
+
+  <!-- GAME SCREEN -->
+  <section id="game-screen" class="screen">
+
+    <header id="hud-top">
+      <div class="hud-cell hud-turn"><span class="lbl">TURN</span> <span id="hud-turn-num">1</span></div>
+      <div class="hud-cell hud-active" id="hud-active-player">RED CHROME</div>
+      <div class="hud-cell hud-funds"><span class="lbl">FUNDS</span> <span id="hud-funds">0</span></div>
+      <div class="hud-cell hud-enemy"><span class="lbl">ENEMY</span> <span id="hud-enemy-funds">0</span></div>
+      <button id="btn-end-turn" class="btn-ghost">END TURN · E</button>
+    </header>
+
+    <div id="board-wrap">
+      <canvas id="board" width="672" height="480"></canvas>
+      <div id="board-overlay"></div>
+    </div>
+
+    <aside id="hud-right">
+      <div id="panel-unit" class="panel hidden">
+        <div class="panel-title" id="pu-name">—</div>
+        <div class="panel-stats">
+          <div><span class="lbl">HP</span> <span id="pu-hp">—</span></div>
+          <div><span class="lbl">MV</span> <span id="pu-move">—</span></div>
+          <div><span class="lbl">ATK</span> <span id="pu-atk">—</span></div>
+          <div><span class="lbl">RNG</span> <span id="pu-rng">—</span></div>
+        </div>
+        <div class="panel-lore" id="pu-lore">—</div>
+      </div>
+
+      <div id="panel-terrain" class="panel hidden">
+        <div class="panel-title" id="pt-name">—</div>
+        <div class="panel-stats">
+          <div><span class="lbl">DEF</span> <span id="pt-def">—</span></div>
+          <div><span class="lbl">MOVE</span> <span id="pt-move">—</span></div>
+        </div>
+        <div class="panel-lore" id="pt-lore">—</div>
+      </div>
+
+      <div id="panel-factory" class="panel hidden">
+        <div class="panel-title">HATCHERY</div>
+        <div class="buy-list" id="buy-list"></div>
+        <button id="btn-factory-close" class="btn-ghost">CANCEL</button>
+      </div>
+
+      <div id="panel-action" class="panel hidden">
+        <button data-action="attack" class="action-btn" id="act-attack">ATTACK</button>
+        <button data-action="capture" class="action-btn" id="act-capture">CAPTURE</button>
+        <button data-action="wait" class="action-btn">WAIT</button>
+        <button data-action="cancel" class="action-btn cancel">CANCEL</button>
+      </div>
+
+      <div id="log" class="panel log">
+        <div class="panel-title">FIELD LOG</div>
+        <ul id="log-list"></ul>
+      </div>
+    </aside>
+
+    <footer id="hud-bottom">
+      <span class="hint">LMB select/move · RMB cancel · E end turn · SPACE music</span>
+    </footer>
+  </section>
+
+  <!-- GAME OVER MODAL -->
+  <div id="gameover" class="modal hidden">
+    <div class="modal-inner">
+      <div id="go-title" class="go-title">VICTORY</div>
+      <div id="go-sub" class="go-sub">RED CHROME CLAIMS THE MESOZOIC</div>
+      <div id="go-stats" class="go-stats"></div>
+      <button id="btn-again" class="btn-primary">PLAY AGAIN</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- load order matters: everything attaches to window.Game -->
+<script src="js/audio.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/units.js"></script>
+<script src="js/map.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>
